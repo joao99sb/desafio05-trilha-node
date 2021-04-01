@@ -13,18 +13,57 @@ export class GamesRepository implements IGamesRepository {
   }
 
   async findByTitleContaining(param: string): Promise<Game[]> {
+
+
     return this.repository
-      .createQueryBuilder()
+    .createQueryBuilder('games')
+    .where('UPPER(games.title) like UPPER(:param)',{param:`%${param}%`})
+    .getMany()
       // Complete usando query builder
   }
 
   async countAllGames(): Promise<[{ count: string }]> {
-    return this.repository.query(); // Complete usando raw query
+    return this.repository.query(`
+      SELECT COUNT(title)
+      FROM games      
+    `); // Complete usando raw query
   }
 
   async findUsersByGameId(id: string): Promise<User[]> {
-    return this.repository
-      .createQueryBuilder()
+
+    interface IUserResponse{
+      email:string;
+      first_name:string;
+      last_name:string
+    }
+
+    const users = await this.repository
+    .createQueryBuilder('games')
+    .leftJoin('games.users','users')
+    .select('users')
+    .where('games.id = :id',{id})
+    .getRawMany()
+
+
+    console.log(users)
+
+    
+    const userArray: IUserResponse[]=[]
+
+    users.map(user =>{
+      const userObject:IUserResponse={
+        email:user.users_email,
+        first_name:user.users_first_name,
+        last_name:user.users_last_name
+      }
+      userArray.push(userObject)
+      
+    })
+
+    console.log(userArray)
+  
+
+    return  userArray as User[]
       // Complete usando query builder
   }
 }
